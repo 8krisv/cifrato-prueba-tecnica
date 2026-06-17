@@ -21,4 +21,4 @@ react-frontend/node_modules/
 cerbot/
 
 # ngnix production files
-!nginx/conf/app.conf
+nginx/conf/app.conf
