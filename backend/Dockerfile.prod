@@ -1,0 +1,12 @@
+FROM python:3
+
+WORKDIR /usr/src/app
+
+#copy entire folder
+COPY . .
+
+# Install dependencies:
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Run the application with gunicorn
+CMD ["gunicorn","--bind","0.0.0.0:8000","api:create_app()"]

@@ -1,0 +1,67 @@
+services:
+
+  backend_api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: backend_container
+    ports:
+      - '8000:8000'
+    volumes:
+      - ./backend/:/usr/src/app # keep sync the ./python_app folder of the local machine with the usr/src/app folder inside the docker container
+    env_file:
+      # enviroment variables
+      - ./backend/.env
+    depends_on:
+      - postgres_db #athAPP service depends on postgres service, this is used for docker to start postgres service first
+      - redis_db
+
+  postgres_db:
+    build: ./postgres
+    container_name: postgres_container_backend
+    restart: always
+    env_file:
+      # enviroment variables
+      - ./postgres/.env
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data_backend:/var/lib/postgresql/data
+
+  redis_db:
+    build: ./redis
+    container_name: redis_container_backend
+    restart: always
+    env_file:
+      # enviroment variables
+      - ./redis/.env
+    command:
+      - /bin/sh
+      - -c
+      # - Double dollars, so that the variable is not expanded by Docker Compose
+      # - Surround by quotes, so that the shell does not split the password
+      # - The ${variable:?message} syntax causes shell to exit with a non-zero
+      #   code and print a message, when the variable is not set or empty
+      - redis-server --save 60 1 --loglevel warning --requirepass "$${REDIS_PASSWORD:?REDIS_PASSWORD variable is not set}"
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data_backend:/data
+
+  nginx:
+    build:
+      context: ./ngnix
+      dockerfile: Dockerfile.dev
+    container_name: nginx_container_server
+    ports:
+      - 1337:80
+    volumes:
+      - ./react-frontend/dist:/usr/share/nginx/html:ro
+    depends_on:
+      - backend_api
+
+volumes:
+  postgres_data_backend:
+    driver: local
+  redis_data_backend:
+    driver: local

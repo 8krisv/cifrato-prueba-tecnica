@@ -1,0 +1,24 @@
+# Variables de entorno
+**/.env
+**/.env.*
+
+# Virtual environments
+**/venv
+
+# Mantener ejemplos
+!**/.env.example
+
+# local uploaded invoices
+backend/uploads/
+
+# python cache
+**/__pycache__/
+
+# node_modules
+react-frontend/node_modules/
+
+# certbot folders
+cerbot/
+
+# ngnix production files
+!nginx/conf/app.conf
