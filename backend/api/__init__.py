@@ -57,7 +57,7 @@ def create_app():
         
     redis_pool = redis.ConnectionPool(host=f"{app.config['REDIS_HOST']}",password=app.config['REDIS_PASSWORD'], port=6379, db=0)
 
-    openai_client = OpenAI(api_key=app.config['OPENAI_API_KEY'])
+    openai_client = OpenAI(api_key=app.config['OPENAI_API_KEY'], max_retries=5)
     storage = StorageService()
 
     from api.resources.user import blp as user_blp
