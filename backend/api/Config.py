@@ -19,8 +19,9 @@ class Config(object):
     if ENV == "PRODUCTION":
         print("Iniciando en modo PRODUCCIÓN 🚀")
         JWT_COOKIE_SECURE = True         # Exige HTTPS (Obligatorio en Prod)
-        JWT_COOKIE_CSRF_PROTECT = True   # Activa la protección CSRF
-        DEBUG = False
+        JWT_COOKIE_CSRF_PROTECT = False  # SameSite + HTTPS ya protege contra CSRF
+        JWT_COOKIE_SAMESITE = "Lax"      # Permite cookies entre subdominios del mismo sitio
+        DEBUG = True
     else:
         print("Iniciando en modo DESARROLLO 🛠️")
         JWT_COOKIE_SECURE = False        # Permite HTTP local (localhost)
