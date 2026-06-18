@@ -235,7 +235,7 @@ def extract_invoice_data(clean_xml: str) -> dict:
                 "iva": iva,
             }
 
-           # 2. se identifican los campos que fallaron (están como "No especificado" o vacíos)
+           # se identifican los campos que fallaron (están como "No especificado" o vacíos)
             campos_para_modelo_dinamico = {}
 
             for key, value in factura_estructurada.items():
@@ -255,7 +255,7 @@ def extract_invoice_data(clean_xml: str) -> dict:
             with _openai_semaphore:
                 try:
                     completion = api.openai_client.beta.chat.completions.parse(
-                        model="gpt-4o", # O gpt-4o-mini que es más barato y excelente para esto
+                        model="gpt-4o", # O también se puede usar gpt-4o-mini que es más barato
                         messages=[
                             {
                                 "role": "system", 
@@ -267,7 +267,7 @@ def extract_invoice_data(clean_xml: str) -> dict:
                             },
                             {"role": "user", "content": f"Extrae los datos de esta factura: {factura_reducida}"}
                         ],
-                        response_format=FacturaDinamica, #  se inyecta la |clase generada al vuelo
+                        response_format=FacturaDinamica, #  se inyecta la clase generada al vuelo
                         temperature=0.0
                     )
                 
@@ -292,7 +292,7 @@ def extract_invoice_data(clean_xml: str) -> dict:
         with _openai_semaphore:
             try:
                 completion = api.openai_client.beta.chat.completions.parse(
-                    model="gpt-4o", # O gpt-4o-mini que es más barato y excelente para esto
+                    model="gpt-4o", 
                     messages=[
                         {
                             "role": "system", 
@@ -304,7 +304,7 @@ def extract_invoice_data(clean_xml: str) -> dict:
                         },
                         {"role": "user", "content": f"Extrae los datos de esta factura: {factura_reducida}"}
                     ],
-                    response_format=FacturaCompleta, # <- ¡Aquí inyectas tu clase generada al vuelo!
+                    response_format=FacturaCompleta, 
                     temperature=0.0
                 )
             except Exception as e:
