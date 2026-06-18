@@ -150,7 +150,7 @@ class InvoiceValidate(MethodView):
                     if value == "" or value == None or value == "No especificado" or value == []:
                         raise ApiError(status_code= 400, message=f"The invoice data is incomplete, field {key} is empty", error_code="INCOMPLETE_DATA")
 
-                # 2. Update the status to VALIDATED
+                # actualizar el esato a 'VALIDATED'
                 cursor.execute("UPDATE public.invoices SET status = 'VALIDATED' WHERE id = %s AND user_id = %s", (invoice_id, user_id))
                 conn.commit()
                 
@@ -374,7 +374,7 @@ class InvoiceList(MethodView):
         if page < 1:
             page = 1
 
-        # 3. Se calcula el OFFSET 
+        # se calcula el OFFSET 
         offset = (page - 1) * limit
 
         try:
@@ -388,7 +388,7 @@ class InvoiceList(MethodView):
                 )
                 total_items = cursor.fetchone()[0]
 
-                # SE trae solo los datos de esta página y ordenados por los más recientes.
+                # se trae solo los datos de esta página y ordenados por los más recientes.
                 cursor.execute("""
                     SELECT id, file_name, status, created_at, updated_at 
                     FROM public.invoices 
@@ -402,7 +402,7 @@ class InvoiceList(MethodView):
         except Exception as e:
             raise ApiError(status_code=500, message="Error al consultar la base de datos", error_code="DATABASE_ERROR")
 
-        # Se formatear los registros a una lista de diccionarios
+        # Se formatean los registros a una lista de diccionarios
         invoices_list = []
         for row in records:
             invoices_list.append({
@@ -413,7 +413,7 @@ class InvoiceList(MethodView):
                 "updated_at": row[4]
             })
 
-        # Calcular metadatos y retornar la estructura estándar
+   
         total_pages = math.ceil(total_items / limit) if total_items > 0 else 1
 
         return jsonify({
