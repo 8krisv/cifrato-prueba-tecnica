@@ -1,13 +1,13 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Outlet } from "react-router-dom";
-
+import FullScreenLoader from "@/components/ui/FullScreenLoader";
 
 function ProtectedRoute() {
     const { user, isLoading: authLoading } = useAuth();
 
     if (authLoading) {
-        return <div>Loading...</div>
+        return <FullScreenLoader />
     }
     if (!user) {
         return <Navigate to="/login" replace />
