@@ -20,6 +20,8 @@ blp = Blueprint("Invoice", __name__, url_prefix="/invoice", description="Operati
 class InvoiceUpload(MethodView):
     @jwt_required()
     def post(self):
+
+        print("INICIANDO CARGA")
         # verify if the file is in the request
         if 'file' not in request.files:
             raise ApiError(status_code= 400, message="The file was not found in the request", error_code="FILE_NOT_FOUND")
@@ -34,9 +36,6 @@ class InvoiceUpload(MethodView):
         # Get the secure filename and calculate the extension
         filename = secure_filename(file.filename)
         extension = os.path.splitext(filename)[1].lower()
-
-        print("filename", filename)
-        print("extension", extension)
 
 
         # verify if the file already exists
@@ -63,9 +62,16 @@ class InvoiceUpload(MethodView):
                 # extract the data from the xml file to a structured format
                 factura_estructurada = extract_invoice_data(clean_xml)
 
-            except ET.ParseError:
+            except ET.ParseError as e:
+                print(f"Error procesando factura: {e}")
                 raise ApiError(status_code= 400, message="The XML file is malformed", error_code="MALFORMED_XML")
-                
+            except ApiError as e:
+                print(f"Error procesando factura: {e}")
+                raise
+            except Exception as e:
+                print(f"Error procesando factura: {e}")
+                raise ApiError(status_code= 500, message=f"Error al procesar la factura: {str(e)}", error_code="PROCESSING_ERROR")
+
         else:
             raise ApiError(status_code= 400, message="Invalid file format, xml is required", error_code="INVALID_FILE_FORMAT")
 

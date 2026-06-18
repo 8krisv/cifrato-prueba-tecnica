@@ -10,6 +10,11 @@ import re
 from flask import current_app
 import re
 from pydantic import create_model
+import threading
+
+# Semáforo global para serializar las llamadas a OpenAI
+# Evita que múltiples uploads simultáneos excedan el rate limit de TPM
+_openai_semaphore = threading.Semaphore(1)
 
 def clean_raw_xml(xml_string: str) -> str:
     """
@@ -230,7 +235,7 @@ def extract_invoice_data(clean_xml: str) -> dict:
                 "iva": iva,
             }
 
-           # 2. Identificas qué campos fallaron (están como "No especificado" o vacíos)
+           # 2. se identifican los campos que fallaron (están como "No especificado" o vacíos)
             campos_para_modelo_dinamico = {}
 
             for key, value in factura_estructurada.items():
@@ -247,26 +252,27 @@ def extract_invoice_data(clean_xml: str) -> dict:
  
            
             # intenta calcular por IA si falla el mapeo directo de los campos en el XML
-            try:
-                completion = api.openai_client.beta.chat.completions.parse(
-                    model="gpt-4o", # O gpt-4o-mini que es más barato y excelente para esto
-                    messages=[
-                        {
-                            "role": "system", 
-                            "content": (
-                                "Eres un contador experto en Colombia. "
-                                "Analiza la siguiente factura y extrae ÚNICAMENTE "
-                                "los datos solicitados en el esquema con precisión absoluta."
-                            )
-                        },
-                        {"role": "user", "content": f"Extrae los datos de esta factura: {factura_reducida}"}
-                    ],
-                    response_format=FacturaDinamica, # <- ¡Aquí inyectas tu clase generada al vuelo!
-                    temperature=0.0
-                )
-            
-            except Exception as e:
-                raise ApiError(status_code=500, message=f"Error al procesar la factura con IA: {str(e)}", error_code="ERROR_PROCESSING_INVOICE")
+            with _openai_semaphore:
+                try:
+                    completion = api.openai_client.beta.chat.completions.parse(
+                        model="gpt-4o", # O gpt-4o-mini que es más barato y excelente para esto
+                        messages=[
+                            {
+                                "role": "system", 
+                                "content": (
+                                    "Eres un contador experto en Colombia. "
+                                    "Analiza la siguiente factura y extrae ÚNICAMENTE "
+                                    "los datos solicitados en el esquema con precisión absoluta."
+                                )
+                            },
+                            {"role": "user", "content": f"Extrae los datos de esta factura: {factura_reducida}"}
+                        ],
+                        response_format=FacturaDinamica, #  se inyecta la |clase generada al vuelo
+                        temperature=0.0
+                    )
+                
+                except Exception as e:
+                    raise ApiError(status_code=500, message=f"Error al procesar la factura con IA: {str(e)}", error_code="ERROR_PROCESSING_INVOICE")
 
 
             # Se extrae los resultados devueltos por la IA en forma de diccionario
@@ -283,25 +289,26 @@ def extract_invoice_data(clean_xml: str) -> dict:
 
         # si la factura no se un formato conocido se intenta extraer todos los campor usando IA
         FacturaCompleta = create_model('FacturaCompleta', **CAMPOS_DEFINICIONES)
-        try:
-            completion = api.openai_client.beta.chat.completions.parse(
-                model="gpt-4o", # O gpt-4o-mini que es más barato y excelente para esto
-                messages=[
-                    {
-                        "role": "system", 
-                        "content": (
-                            "Eres un contador experto en Colombia. "
-                            "Analiza la siguiente factura y extrae ÚNICAMENTE "
-                            "los datos solicitados en el esquema con precisión absoluta."
-                        )
-                    },
-                    {"role": "user", "content": f"Extrae los datos de esta factura: {factura_reducida}"}
-                ],
-                response_format=FacturaCompleta, # <- ¡Aquí inyectas tu clase generada al vuelo!
-                temperature=0.0
-            )
-        except Exception as e:
-            raise ApiError(status_code=500, message=f"Error al procesar la factura con IA: {str(e)}", error_code="ERROR_PROCESSING_INVOICE")
+        with _openai_semaphore:
+            try:
+                completion = api.openai_client.beta.chat.completions.parse(
+                    model="gpt-4o", # O gpt-4o-mini que es más barato y excelente para esto
+                    messages=[
+                        {
+                            "role": "system", 
+                            "content": (
+                                "Eres un contador experto en Colombia. "
+                                "Analiza la siguiente factura y extrae ÚNICAMENTE "
+                                "los datos solicitados en el esquema con precisión absoluta."
+                            )
+                        },
+                        {"role": "user", "content": f"Extrae los datos de esta factura: {factura_reducida}"}
+                    ],
+                    response_format=FacturaCompleta, # <- ¡Aquí inyectas tu clase generada al vuelo!
+                    temperature=0.0
+                )
+            except Exception as e:
+                raise ApiError(status_code=500, message=f"Error al procesar la factura con IA: {str(e)}", error_code="ERROR_PROCESSING_INVOICE")
 
 
         # se extraes el objeto de Python 
